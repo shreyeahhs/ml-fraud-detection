@@ -1,18 +1,3 @@
-"""
-Simple custom data drift monitoring without Evidently.
-
-This script compares a reference dataset (usually training/validation data)
-with a current dataset (usually recent production data) and generates a very
-simple HTML report that shows which features have drifted.
-
-We use:
-- KS (Kolmogorov–Smirnov) test for numeric features.
-- Chi-square test for categorical features.
-
-If the p-value of the test is below a chosen threshold (default 0.05),
-we say that the feature has "drifted".
-"""
-
 import os
 from typing import Tuple, List
 
