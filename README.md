@@ -1,296 +1,284 @@
-# IEEE-CIS Fraud Detection — End-to-End Machine Learning Project
+# Fraud Detection Using Kaggle Credit Card Transactions Dataset
 
-This repository contains a complete, beginner-friendly, end-to-end machine learning project built using the **IEEE-CIS Fraud Detection Dataset (Kaggle)**.  
-It takes you from **raw data → preprocessing → feature engineering → model training → hyperparameter tuning → batch inference → REST API → monitoring with Evidently**.
-
-Everything is written in **simple English**, with clear explanations of *why* each step is necessary.
-
----
-
-## ⭐ Project Overview
-
-The goal is to build a fraud detection pipeline that:
-
-- Preprocesses & merges raw Kaggle CSV files  
-- Performs exploratory data analysis (EDA)  
-- Creates new useful features  
-- Trains an XGBoost model  
-- Tunes hyperparameters using Bayesian Optimization  
-- Serves predictions through a FastAPI REST API  
-- Supports batch inference for CSV files  
-- Monitors data drift in production using Evidently  
+**Author:** Shreyas Gowda
+**Program:** MSc Data Science
+**Institution:** University of Glasgow
+**Project:** Fraud Detection (Machine Learning)
 
 ---
 
-## 📂 Folder Structure
+##  Table of Contents
+
+1. [Project Overview](#project-overview)
+2. [Objectives](#objectives)
+3. [Dataset Description](#dataset-description)
+4. [Directory Structure](#directory-structure)
+5. [Technologies & Libraries](#technologies--libraries)
+6. [Methodology](#methodology)
+7. [Models Implemented](#models-implemented)
+8. [Evaluation Metrics](#evaluation-metrics)
+9. [Results](#results)
+10. [How to Run the Project](#how-to-run-the-project)
+11. [Challenges & Solutions](#challenges--solutions)
+12. [Future Work](#future-work)
+13. [References & Credits](#references--credits)
+14. [License](#license)
+15. [Acknowledgements](#acknowledgements)
+
+---
+
+##  Project Overview
+
+This project focuses on developing a robust **fraud detection system** using machine learning techniques applied to the **Kaggle Credit Card Fraud Detection** dataset.
+Due to the extremely imbalanced nature of the data (fraudulent cases are less than 0.2%), the project explores a variety of strategies including resampling techniques, anomaly detection models, and cost-sensitive learning.
+
+The aim is to produce a model that is:
+
+* Highly sensitive to fraudulent behaviour
+* Interpretable wherever possible
+* Scalable and reproducible
+* Well-documented for academic and industrial use
+
+---
+
+##  Objectives
+
+* Perform deep exploratory data analysis (EDA) to understand behavioural patterns.
+* Handle severe class imbalance effectively using advanced resampling methods.
+* Train a variety of machine learning models and compare performance.
+* Build an evaluation pipeline tailored for fraud detection.
+* Document every stage for reproducibility and clarity.
+
+---
+
+##  Dataset Description
+
+**Source:** Kaggle — *Credit Card Fraud Detection*
+**Link:** Search "Credit Card Fraud Detection" on Kaggle (due to licensing, link excluded)
+
+### Dataset Summary
+
+* **Total rows:** 284,807
+* **Fraud cases:** 492
+* **Imbalance ratio:** ~1:577
+* **Features:**
+
+  * **Time:** Seconds elapsed between each transaction and the first recorded transaction
+  * **Amount:** Transaction amount
+  * **V1–V28:** Principal Component Analysis (PCA) transformed features protecting confidentiality
+  * **Class:**
+
+    * 0 → Legitimate
+    * 1 → Fraud
+
+### Preprocessing Performed
+
+* Missing values verification (dataset contains no nulls)
+* Scaling of `Amount` and `Time` using StandardScaler
+* Train-test splitting using stratification
+* Oversampling using **SMOTE**, **ADASYN**, and hybrid techniques
+* Undersampling using **NearMiss** variants
+
+---
+
+##  Directory Structure
 
 ```
-ml-fraud-detection/
-├── README.md
-├── data/
-│   ├── raw/
-│   └── processed/
-├── notebooks/
-│   ├── 01_eda.ipynb
-│   ├── 02_feature_engineering.ipynb
-│   ├── 03_model_training.ipynb
-│   ├── 04_bayesian_optimization.ipynb
-│   └── 05_inference_testing.ipynb
-├── src/
-│   ├── preprocess.py
-│   ├── feature_engineering.py
-│   ├── train.py
-│   ├── bayesian_optimization.py
-│   ├── predict.py
-│   ├── fastapi_app.py
-│   ├── batch_inference.py
-│   └── monitoring.py
-├── models/
-├── Dockerfile
-├── requirements.txt
-└── .gitignore
-```
-
----
-
-## 📘 Dataset Description
-
-The dataset contains **two main tables**:
-
-- **transaction** files → transaction-level details  
-- **identity** files → device & user-level metadata  
-
-They must be **merged on `TransactionID`** to form a complete picture of each transaction.
-
-### Why merging matters
-
-Fraud behavior often depends on the combination of:
-
-- transaction amount + device fingerprints  
-- card details + IP address  
-- time of transaction + browser metadata  
-
-Keeping the tables separate would hide these relationships.
-
----
-
-## 🧹 Preprocessing Steps
-
-### Done in `src/preprocess.py`
-
-- Load raw CSV files  
-- Merge datasets  
-- Drop useless identifier columns  
-- Split into train/validation sets  
-- Save processed parquet files  
-
----
-
-## 🛠 Feature Engineering
-
-Done in `src/feature_engineering.py`.
-
-Includes:
-
-- Label encoding categorical features  
-- Scaling numeric features  
-- Adding handcrafted features:
-  - `TransactionAmt_log`
-  - `Transaction_day`
-  - `Transaction_hour`
-
-### Why feature engineering improves accuracy
-
-It gives the model **cleaner, more informative** inputs, helping it detect subtle fraud patterns.
-
----
-
-## 🤖 Model Training (XGBoost)
-
-XGBoost is chosen because:
-
-- Works extremely well on tabular data  
-- Handles missing values  
-- Captures non-linear relationships  
-- Widely used in real-world fraud systems  
-
-Metric used: **ROC-AUC** (good for imbalanced datasets).
-
-Training is implemented in `src/train.py`.
-
----
-
-## 🔍 Bayesian Optimization
-
-Optuna is used to tune hyperparameters using **Bayesian optimization**, which:
-
-- Learns which combinations of parameters work well  
-- Is faster and smarter than grid/random search  
-
-Configured in `src/bayesian_optimization.py`.
-
----
-
-## 🚀 FastAPI REST API
-
-Run:
-
-```bash
-uvicorn src.fastapi_app:app --reload
-```
-
-API endpoints:
-
-### `GET /`
-Health check.
-
-### `POST /predict`
-Predict fraud probability for one or many transactions.
-
-Example request:
-
-```json
-{
-  "transactions": [
-    {"TransactionAmt": 100, "ProductCD": "W", "card1": 1000}
-  ]
-}
-```
-
-Example response:
-
-```json
-{
-  "predictions": [
-    {"probability": 0.12, "label": 0}
-  ]
-}
+project/
+│── data/
+│   ├── creditcard.csv
+│── notebooks/
+│   ├── 01_EDA.ipynb
+│   ├── 02_Preprocessing.ipynb
+│   ├── 03_Modelling.ipynb
+│   └── 04_Evaluation.ipynb
+│── src/
+│   ├── utils.py
+│   ├── preprocessing.py
+│   ├── models.py
+│   └── evaluation.py
+│── reports/
+│   ├── results_table.csv
+│   └── model_comparisons.png
+│── README.md
+│── requirements.txt
+│── LICENSE
 ```
 
 ---
 
-## 📦 Docker Support
+##  Technologies & Libraries
 
-Build:
-
-```bash
-docker build -t fraud-api .
-```
-
-Run:
-
-```bash
-docker run -p 8000:8000 fraud-api
-```
+* **Python 3.10+**
+* **NumPy** / **Pandas**
+* **Matplotlib** / **Seaborn** for visualizations
+* **Scikit-learn** for ML models
+* **Imbalanced-Learn** for resampling techniques
+* **XGBoost**, **LightGBM**, **CatBoost** for gradient boosted modelling
+* **TensorFlow / Keras** (optional) for deep models
 
 ---
 
-## 📊 Batch Inference
+##  Methodology
 
-Script: `src/batch_inference.py`
+### 1️ Exploratory Data Analysis (EDA)
 
-Run:
+* Distribution analysis (legitimate vs fraudulent)
+* Correlation heatmaps
+* Box plots to detect variance patterns
+* Time-based patterns
+* Transaction amount frequency analysis
 
-```bash
-python -m src.batch_inference --input_csv data/new.csv --output_csv data/scored.csv
-```
+### 2️ Data Preprocessing
 
-Adds:
+* Standardization of numerical features
+* Handling imbalance with:
 
-- `fraud_probability`
-- `fraud_label`
+  * SMOTE
+  * SMOTEENN
+  * Random undersampling
+  * Ensemble-based balancing (BalancedRandomForest)
+
+### 3️ Feature Selection
+
+* PCA components are already anonymised, so interpretability is limited
+* Importance was derived from:
+
+  * Feature importance from tree-based models
+  * Permutation importance
+  * SHAP values
+
+### 4️ Model Training
+
+* Logistic Regression (baseline)
+* Random Forest
+* XGBoost
+* LightGBM
+* CatBoost
+* Isolation Forest (anomaly detection)
+* Autoencoders (deep learning anomaly detection)
+
+### 5️ Evaluation
+
+Given imbalance, the main metrics:
+
+* **Precision**
+* **Recall** (critical)
+* **F1 Score**
+* **ROC AUC**
+* **PR AUC** (more informative for imbalanced tasks)
+* Confusion matrix analysis
 
 ---
 
-## 🔎 Monitoring with Evidently
+##  Models Implemented
 
-`src/monitoring.py` generates an **HTML drift report**.
-
-Why drift matters:
-
-- Fraud patterns evolve  
-- Models degrade over time  
-- Drift detection tells you when retraining is needed  
-
-Output example:
-
-```
-models/data_drift_report.html
-```
+| Model               | Type                | Purpose                               |
+| ------------------- | ------------------- | ------------------------------------- |
+| Logistic Regression | Baseline classifier | Benchmark comparison                  |
+| Random Forest       | Ensemble            | Captures non-linear patterns          |
+| XGBoost             | Gradient Boosting   | High performance and interpretability |
+| LightGBM            | Gradient Boosting   | Fast training on large datasets       |
+| CatBoost            | Gradient Boosting   | Handles categorical data well         |
+| Isolation Forest    | Anomaly Detection   | Fraud = rare event                    |
+| Autoencoder         | Deep Learning       | Learns reconstruction errors          |
 
 ---
 
-## 🧪 Jupyter Notebooks
+##  Results (Example Summary)
 
-1. **01_eda.ipynb** – Explore dataset  
-2. **02_feature_engineering.ipynb** – Build features  
-3. **03_model_training.ipynb** – Train & evaluate model  
-4. **04_bayesian_optimization.ipynb** – Tune hyperparameters  
-5. **05_inference_testing.ipynb** – Validate inference pipeline  
+> Replace these with your actual values
+
+* **Best Model:** XGBoost
+* **Recall:** ~0.93
+* **Precision:** ~0.85
+* **F1 Score:** ~0.89
+* **PR AUC:** ~0.95
+
+Confusion matrix and ROC curves are included in `/reports/`.
 
 ---
 
-## ▶ How to Run the Entire Pipeline
+##  How to Run the Project
 
-### 1. Install dependencies
+### Step 1 — Clone Repository
 
-```bash
+```
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
+```
+
+### Step 2 — Install Dependencies
+
+```
 pip install -r requirements.txt
 ```
 
-### 2. Download Kaggle dataset → place in `data/raw/`
+### Step 3 — Run Notebooks
 
-### 3. Run preprocessing
+Open `notebooks/` using Jupyter or VS Code.
 
-```bash
-python -m src.preprocess
+### Step 4 — Run Scripts
+
 ```
-
-### 4. Train model
-
-```bash
-python -m src.train
-```
-
-### 5. Start API
-
-```bash
-uvicorn src.fastapi_app:app --reload
+python src/models.py
 ```
 
 ---
 
-## 📸 Placeholder Screenshots
+##  Challenges & Solutions
 
-```
-docs/images/eda.png
-docs/images/feature_importance.png
-docs/images/evidently_report.png
-docs/images/api_docs.png
-```
+### Severe Class Imbalance
 
-(Add your own screenshots here.)
+**Challenge:** Fraud cases < 0.2%
+**Solution:** Hybrid resampling + anomaly detection + custom threshold tuning.
 
----
+### Interpretability
 
-## ✔ Summary
+**Challenge:** PCA-transformed features
+**Solution:** Tree-based feature importance + SHAP analysis.
 
-This project demonstrates a **full ML production workflow**:
+### Data Leakage
 
-- Data preprocessing  
-- Feature engineering  
-- Model training  
-- Hyperparameter tuning  
-- Serving predictions  
-- Batch scoring  
-- Monitoring with Evidently  
-
-It can be used as a template for:
-
-- Fraud detection systems  
-- Tabular ML projects  
-- Real-world ML pipelines  
+**Challenge:** Balancing only the training set
+**Solution:** Strict use of stratification and pipeline-based balancing.
 
 ---
 
-Happy building!
+##  Future Work
+
+* Deploying model via FastAPI or Flask
+* Real-time anomaly detection pipeline
+* Integration with streaming platforms (Kafka)
+* Explainability dashboards using SHAP or LIME
+* Federated learning for privacy-preserving fraud detection
+
+---
+
+##  References & Credits
+
+* **Dataset:** Credit Card Fraud Detection — Kaggle
+* **Scikit-learn Documentation:** [https://scikit-learn.org](https://scikit-learn.org)
+* **Imbalanced-learn Documentation:** [https://imbalanced-learn.org](https://imbalanced-learn.org)
+* Research papers on fraud detection & imbalance handling
+* Community forums and discussions on Kaggle & StackOverflow
+* **GPT assistance used for generating documentation structure and code comments**
+
+---
+
+##  License
+
+This project is licensed under the **MIT License**.
+Feel free to reuse and modify with attribution.
+
+---
+
+##  Acknowledgements
+
+Thanks to open-source contributors, Kaggle dataset providers, and the machine learning research community whose work makes projects like this possible.
+
+---
+
+##  Made with ❤️ by **Shreyas Gowda**
+
+…and documented with a little help from **GPT** for better understanding and readability of code.
